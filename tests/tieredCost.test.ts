@@ -120,6 +120,23 @@ describe('tiers', (): void => {
     expect(3 * weights[0] + 2 * weights[1] + weights[2]).to.equal(steps(6));
   });
 
+  it("should weight each band by its advances' mean step cost, for a ruleset's own, adding up to that path's cost", (): void => {
+    // The n-th costs n²: 1, 4 and 9 (mean 14/3); 16 and 25 (20.5); 36.
+    const square = (n: number): number => n * n,
+      weights = positionWeights(
+        prerequisiteCounts(advances, requirements),
+        [0, 2, Infinity],
+        square
+      );
+
+    expect(weights).to.eql([14 / 3, 20.5, 36]);
+    expect(steps(6, square)).to.equal(91);
+    expect(3 * weights[0] + 2 * weights[1] + weights[2]).to.be.closeTo(
+      91,
+      1e-9
+    );
+  });
+
   it("should give each advance its tier's weight", (): void => {
     expect(
       weightsFor(prerequisiteCounts(advances, requirements), tiers).get(Bronze)
@@ -156,6 +173,37 @@ describe('check', (): void => {
       'Cart costs less than Wheel, which it needs.',
       'Cart costs less than Bronze, which it needs.',
     ]);
+  });
+
+  it("should measure the total by a ruleset's own step cost, within a tolerance", (): void => {
+    const square = (n: number): number => n * n,
+      rounded = [
+        { upTo: 0, weight: 5 },
+        { upTo: 2, weight: 20 },
+        { upTo: Infinity, weight: 36 },
+      ];
+
+    // 3 × 5 + 2 × 20 + 36 = 91.
+    expect(check(advances, requirements, rounded, { stepCost: square })).to.eql(
+      []
+    );
+
+    const near = [
+      { upTo: 0, weight: 5 },
+      { upTo: 2, weight: 21 },
+      { upTo: Infinity, weight: 36 },
+    ];
+
+    // 93, 2.2% over 91.
+    expect(check(advances, requirements, near, { stepCost: square })).to.eql([
+      'The weights add up to 93 steps, not the 91 of learning each advance in turn.',
+    ]);
+    expect(
+      check(advances, requirements, near, {
+        stepCost: square,
+        tolerance: 0.025,
+      })
+    ).to.eql([]);
   });
 
   it('should report a last tier that stops short', (): void => {

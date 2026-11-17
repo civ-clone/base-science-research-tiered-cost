@@ -1,17 +1,24 @@
-import { Tier, steps, tierOf } from './tiers';
+import { StepCost, Tier, steps, tierOf } from './tiers';
 import Advance from '@civ-clone/core-science/Advance';
 import Requirement from '@civ-clone/core-requirement/Requirement';
 import prerequisiteCounts from './prerequisites';
 
+/** How `check` measures the total: by a ruleset's own `stepCost`, and within `tolerance` (a fraction) of it. */
+export interface CheckOptions {
+  stepCost?: StepCost;
+  tolerance?: number;
+}
+
 /**
  * What is wrong with a ruleset's tiers, as sentences: none when every advance has a tier, the tiers rise, the weights
- * add up to what learning every advance in turn costs (1 + 2 + … + their number), and no advance is cheaper than one
- * it needs. For a ruleset's tests.
+ * add up to what learning every advance in turn costs (`steps`: 1 + 2 + … + their number unless told otherwise, and
+ * exactly unless given a `tolerance`), and no advance is cheaper than one it needs. For a ruleset's tests.
  */
 export const check = (
   advances: (typeof Advance)[],
   requirements: readonly Requirement[],
-  tiers: readonly Tier[]
+  tiers: readonly Tier[],
+  { stepCost, tolerance = 0 }: CheckOptions = {}
 ): string[] => {
   const problems: string[] = [],
     counts = prerequisiteCounts(advances, requirements);
@@ -37,9 +44,9 @@ export const check = (
         sum + tiers[tierOf(count, tiers)].weight,
       0
     ),
-    expected = steps(advances.length);
+    expected = steps(advances.length, stepCost);
 
-  if (total !== expected) {
+  if (Math.abs(total - expected) > tolerance * expected) {
     problems.push(
       `The weights add up to ${total} steps, not the ${expected} of learning each advance in turn.`
     );
