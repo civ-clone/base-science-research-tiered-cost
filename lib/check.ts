@@ -46,7 +46,8 @@ export const check = (
     ),
     expected = steps(advances.length, stepCost);
 
-  if (Math.abs(total - expected) > tolerance * expected) {
+  // Not within the tolerance, so a weight that isn't a number (NaN) is reported too.
+  if (!(Math.abs(total - expected) <= tolerance * expected)) {
     problems.push(
       `The weights add up to ${total} steps, not the ${expected} of learning each advance in turn.`
     );

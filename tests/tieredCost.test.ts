@@ -206,6 +206,14 @@ describe('check', (): void => {
     ).to.eql([]);
   });
 
+  it('should report weights that are not numbers', (): void => {
+    expect(
+      check(advances, requirements, [{ upTo: Infinity, weight: NaN }])
+    ).to.eql([
+      'The weights add up to NaN steps, not the 21 of learning each advance in turn.',
+    ]);
+  });
+
   it('should report a last tier that stops short', (): void => {
     expect(check(advances, requirements, [{ upTo: 9, weight: 1 }])).to.eql([
       "The last tier's `upTo` isn't Infinity.",
