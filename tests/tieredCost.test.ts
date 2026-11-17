@@ -63,6 +63,17 @@ describe('prerequisiteCounts', (): void => {
     ).to.equal(1);
   });
 
+  it('should count only the advances given, not other things an entry names', (): void => {
+    class Barracks {}
+
+    expect(
+      prerequisiteCounts(
+        [Fire, Wheel],
+        table('test:requires', 'requires', [[Wheel, Fire, Barracks]])
+      ).get(Wheel)
+    ).to.equal(1);
+  });
+
   it('should refuse an entry that needs any one of its advances', (): void => {
     expect(() =>
       prerequisiteCounts(advances, [
