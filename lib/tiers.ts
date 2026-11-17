@@ -35,16 +35,27 @@ export const weightsFor = (
   );
 
 /**
- * The weight each band would have to cost as much as learning steadily does where the n-th advance costs n: sort the
- * advances by their number of prerequisites, number them 1, 2, 3… in that order, and average the numbers in each band.
- * Advances with the same count are in the same band, so the order among them doesn't matter.
+ * What the n-th advance a player learns costs, in steps of its rate, by a ruleset's own cost: n, where it costs the
+ * advances known times a rate, as Civilization's does. A ruleset whose rate also grows with the advances known gives
+ * its own: Civilization II's adds up to three quarters over the first twenty.
+ */
+export type StepCost = (n: number) => number;
+
+/** n: the n-th advance costs n steps. */
+export const byPosition: StepCost = (n: number): number => n;
+
+/**
+ * The weight each band would have to cost as much as learning steadily does: sort the advances by their number of
+ * prerequisites, number them 1, 2, 3… in that order, and average the cost of each number (`stepCost`, n unless told
+ * otherwise) in each band. Advances with the same count are in the same band, so the order among them doesn't matter.
  *
- * Unrounded, they add up to exactly 1 + 2 + … + the number of advances, as today's cost does. A ruleset rounds them
- * to whole numbers that keep that total, and `check` confirms it.
+ * Unrounded, they add up to exactly what learning every advance in turn costs (`steps`), as today's cost does. A
+ * ruleset rounds them to whole numbers that keep that total, or near it, and `check` confirms it.
  */
 export const positionWeights = (
   counts: ReadonlyMap<typeof Advance, number>,
-  bands: readonly number[]
+  bands: readonly number[],
+  stepCost: StepCost = byPosition
 ): number[] => {
   const sorted = [...counts.values()].sort((a, b) => a - b),
     sums = bands.map(() => 0),
@@ -56,7 +67,7 @@ export const positionWeights = (
       bands.map((upTo: number): Tier => ({ upTo, weight: 0 }))
     );
 
-    sums[band] += index + 1;
+    sums[band] += stepCost(index + 1);
     sizes[band]++;
   });
 
@@ -65,6 +76,16 @@ export const positionWeights = (
   );
 };
 
-/** 1 + 2 + … + `advances`: what learning that many advances costs, in steps, when the n-th costs n. */
-export const steps = (advances: number): number =>
-  (advances * (advances + 1)) / 2;
+/**
+ * What learning that many advances in turn costs, in steps: 1 + 2 + … + `advances` when the n-th costs n, or the sum
+ * of `stepCost` over them.
+ */
+export const steps = (
+  advances: number,
+  stepCost: StepCost = byPosition
+): number =>
+  stepCost === byPosition
+    ? (advances * (advances + 1)) / 2
+    : Array.from({ length: advances }, (_, index) =>
+        stepCost(index + 1)
+      ).reduce((sum: number, step: number): number => sum + step, 0);
