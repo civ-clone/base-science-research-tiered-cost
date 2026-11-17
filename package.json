@@ -1,6 +1,6 @@
 {
   "name": "@civ-clone/base-science-research-tiered-cost",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Research costs fixed per advance by tier: count each advance's prerequisites, band them into tiers, weight each tier by where its advances fall in a steady path through the tree, and cost an advance as its weight times the ruleset's rate.",
   "repository": "git@github.com:civ-clone/base-science-research-tiered-cost.git",
   "keywords": [
